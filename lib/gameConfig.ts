@@ -1,0 +1,40 @@
+export const GAME_CONFIG = {
+  easy: {
+    label: 'Easy',
+    speed: 0.7,
+    speedVar: 0.1,
+    spawn: 2.8,
+    max: 4,
+    lives: 5,
+    letterChance: 0.5,
+    minLen: 3,
+    maxLen: 4,
+    blurb: 'Slow bubbles, single letters and short words, up to 4 at once, 5 lives.',
+  },
+  medium: {
+    label: 'Medium',
+    speed: 1.1,
+    speedVar: 0.2,
+    spawn: 2.0,
+    max: 6,
+    lives: 4,
+    letterChance: 0,
+    minLen: 4,
+    maxLen: 7,
+    blurb: 'Moderate speed, everyday words of 4-7 letters, up to 6 at once, 4 lives.',
+  },
+  hard: {
+    label: 'Hard',
+    speed: 1.6,
+    speedVar: 0.4,
+    spawn: 1.4,
+    max: 8,
+    lives: 3,
+    letterChance: 0,
+    minLen: 7,
+    maxLen: 12,
+    blurb: 'Fast and uneven speeds, long words of 7-12 letters, up to 8 at once, 3 lives.',
+  },
+};
+export const WORLD = { top: 6.6, danger: -3.4, cannonY: -5.2 };
+export const POOL = { bubbles: 8, projectiles: 12, particles: 60 };
