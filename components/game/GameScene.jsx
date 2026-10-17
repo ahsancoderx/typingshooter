@@ -1,41 +1,80 @@
 'use client';
 import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
-import { MeshBasicMaterial } from 'three';
+import { CanvasTexture, MeshBasicMaterial, SRGBColorSpace, SpriteMaterial } from 'three';
 import { POOL, WORLD } from '@/lib/gameConfig';
 const range = (n) => Array.from({ length: n }, (_, i) => i);
 function Loop({ engine }) {
   useFrame((state, dt) => {
-    engine.setHalfW(Math.min(8, Math.max(2, state.viewport.width / 2 - 1.6)));
+    engine.setHalfW(Math.min(8, Math.max(2, state.viewport.width / 2 - 2.2)));
     engine.update(Math.min(dt, 0.05));
   });
   return null;
 }
+const LABEL_FONT = 'bold 92px Consolas, "Courier New", monospace';
+
+function makeLabel() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  const material = new SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  return { ctx: canvas.getContext('2d'), texture, material };
+}
+
+// Draws the bubble text on a canvas texture: typed letters blue, the rest white.
+function drawLabel(label, text, progress) {
+  const c = label.ctx;
+  c.clearRect(0, 0, 1024, 512);
+  c.font = LABEL_FONT;
+  c.textBaseline = 'middle';
+  c.textAlign = 'left';
+  c.lineJoin = 'round';
+  c.lineWidth = 10;
+  c.strokeStyle = 'rgba(2,8,30,0.85)';
+  const typed = text.slice(0, progress);
+  const x = (1024 - c.measureText(text).width) / 2;
+  c.strokeText(text, x, 262);
+  c.fillStyle = '#4da3ff';
+  c.fillText(typed, x, 262);
+  c.fillStyle = '#ffffff';
+  c.fillText(text.slice(progress), x + c.measureText(typed).width, 262);
+  label.texture.needsUpdate = true;
+}
+
 function BubbleView({ engine, index }) {
-  const g = useRef(null);
+  const group = useRef(null);
+  const mesh = useRef(null);
   const mat = useRef(null);
-  const label = useRef(null);
-  const seen = useRef(-1);
+  const seen = useRef('');
+  const label = useMemo(() => makeLabel(), []);
+  useEffect(
+    () => () => {
+      label.texture.dispose();
+      label.material.dispose();
+    },
+    [label],
+  );
   useFrame(() => {
-    const b = engine.bubbles[index],
-      grp = g.current,
-      el = label.current;
-    if (!grp || !el) return;
-    grp.visible = b.alive;
-    el.style.display = b.alive ? 'block' : 'none';
+    const b = engine.bubbles[index];
+    const g = group.current;
+    if (!g) return;
+    g.visible = b.alive;
     if (!b.alive) return;
-    grp.position.set(b.x, b.y, 0);
-    grp.scale.setScalar(b.r);
-    if (seen.current !== b.version) {
-      seen.current = b.version;
-      el.innerHTML = `<span class="bt-hit">${b.text.slice(0, b.progress)}</span>${b.text.slice(b.progress)}`;
+    g.position.set(b.x, b.y, 0);
+    const pulse = b === engine.active || b.dying ? 1 + 0.04 * Math.sin(engine.time * 10) : 1;
+    if (mesh.current) mesh.current.scale.setScalar(b.r * pulse);
+    const key = `${b.version}|${b.text}|${b.progress}`;
+    if (seen.current !== key) {
+      seen.current = key;
+      drawLabel(label, b.text, b.progress);
     }
     if (mat.current) mat.current.emissiveIntensity = b === engine.active ? 1.8 : b.dying ? 2.4 : 0.6;
   });
   return (
-    <group ref={g} visible={false}>
-      <mesh>
+    <group ref={group} visible={false}>
+      <mesh ref={mesh}>
         <sphereGeometry args={[1, 32, 24]} />
         <meshPhysicalMaterial
           ref={mat}
@@ -47,12 +86,13 @@ function BubbleView({ engine, index }) {
           clearcoat={1}
         />
       </mesh>
-      <Html center style={{ pointerEvents: 'none' }}>
-        <div ref={label} className="bt-label" />
-      </Html>
+      <sprite scale={[5.12, 2.56, 1]} renderOrder={2}>
+        <primitive object={label.material} attach="material" />
+      </sprite>
     </group>
   );
 }
+
 function Cannon({ engine }) {
   const pivot = useRef(null);
   const barrel = useRef(null);
