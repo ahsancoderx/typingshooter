@@ -37,7 +37,7 @@ export default function LineChart({ points, xLabel, yLabel, yMax, ariaLabel }) {
       <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel}>
         {yTicks.map((v) => (
           <g key={v}>
-            <line x1={L} x2={W - R} y1={sy(v)} y2={sy(v)} stroke="rgba(130,160,255,.16)" />
+            <line x1={L} x2={W - R} y1={sy(v)} y2={sy(v)} stroke="rgba(22,32,30,.14)" />
             <text x={L - 8} y={sy(v) + 4} textAnchor="end">
               {Math.round(v)}
             </text>
@@ -52,12 +52,12 @@ export default function LineChart({ points, xLabel, yLabel, yMax, ariaLabel }) {
         )}
         <polyline
           fill="none"
-          stroke="#3d8bff"
-          strokeWidth="2.5"
+          stroke="#1B6FA8"
+          strokeWidth="3.5"
           points={points.map((p) => `${sx(p.x)},${sy(p.y)}`).join(' ')}
         />
         {points.map((p, i) => (
-          <circle key={i} cx={sx(p.x)} cy={sy(p.y)} r="3.5" fill="#8b6cff" />
+          <circle key={i} cx={sx(p.x)} cy={sy(p.y)} r="5" fill="#F7C948" stroke="#16201E" strokeWidth="2" />
         ))}
         <text x={(L + W - R) / 2} y={H - 6} textAnchor="middle">
           {xLabel}

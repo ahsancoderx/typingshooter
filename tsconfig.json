@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "app/layout.jsx"  ],
+, "app/layout.jsx", "lib/gameConfig.js", "lib/webgl.js", "lib/typingMetrics.js", "lib/textGenerator.js", "lib/storage.js", "lib/sound.js", "lib/gameEngine.js", "lib/dateUtils.js", "hooks/useTypingSession.js", "data/wordPools.js", "data/passages.js", "data/lessons.js", "components/ui/StatCard.jsx", "components/ui/LineChart.jsx", "components/ui/EmptyState.jsx", "components/ui/DurationSelector.jsx", "components/ui/DifficultySelector.jsx", "components/ui/ConfirmDialog.jsx", "components/typing/TypingTest.jsx", "components/typing/TypingResults.jsx", "components/typing/TypingPassage.jsx", "components/progress/SettingsPanel.jsx", "components/progress/ProgressDashboard.jsx", "components/progress/Progress3DChart.jsx", "components/learn/TypingExercise.jsx", "components/learn/LessonCard.jsx", "components/learn/LearningProgress.jsx", "components/game/GameLoader.jsx", "components/game/GameScene.jsx", "components/game/GameCanvas.jsx", "app/page.jsx"  ],
   "exclude": ["node_modules"]
 }

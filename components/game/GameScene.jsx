@@ -3,7 +3,20 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { CanvasTexture, MeshBasicMaterial, SRGBColorSpace, SpriteMaterial } from 'three';
 import { POOL, WORLD } from '@/lib/gameConfig';
+
 const range = (n) => Array.from({ length: n }, (_, i) => i);
+const BUBBLE_COLORS = [
+  '#F7C948',
+  '#E9695C',
+  '#A8D5BA',
+  '#BFA7F0',
+  '#8EC9F5',
+  '#F2A65A',
+  '#F4B6C2',
+  '#9AD1C9',
+];
+const LABEL_FONT = 'bold 92px Consolas, "Courier New", monospace';
+
 function Loop({ engine }) {
   useFrame((state, dt) => {
     engine.setHalfW(Math.min(8, Math.max(2, state.viewport.width / 2 - 2.2)));
@@ -11,7 +24,6 @@ function Loop({ engine }) {
   });
   return null;
 }
-const LABEL_FONT = 'bold 92px Consolas, "Courier New", monospace';
 
 function makeLabel() {
   const canvas = document.createElement('canvas');
@@ -23,7 +35,7 @@ function makeLabel() {
   return { ctx: canvas.getContext('2d'), texture, material };
 }
 
-// Draws the bubble text on a canvas texture: typed letters blue, the rest white.
+// Bubble text drawn on a canvas texture: typed letters blue, the rest dark ink with a cream outline.
 function drawLabel(label, text, progress) {
   const c = label.ctx;
   c.clearRect(0, 0, 1024, 512);
@@ -31,14 +43,14 @@ function drawLabel(label, text, progress) {
   c.textBaseline = 'middle';
   c.textAlign = 'left';
   c.lineJoin = 'round';
-  c.lineWidth = 10;
-  c.strokeStyle = 'rgba(2,8,30,0.85)';
+  c.lineWidth = 12;
+  c.strokeStyle = 'rgba(251,249,239,0.95)';
   const typed = text.slice(0, progress);
   const x = (1024 - c.measureText(text).width) / 2;
   c.strokeText(text, x, 262);
-  c.fillStyle = '#4da3ff';
+  c.fillStyle = '#1456C8';
   c.fillText(typed, x, 262);
-  c.fillStyle = '#ffffff';
+  c.fillStyle = '#16201E';
   c.fillText(text.slice(progress), x + c.measureText(typed).width, 262);
   label.texture.needsUpdate = true;
 }
@@ -49,6 +61,7 @@ function BubbleView({ engine, index }) {
   const mat = useRef(null);
   const seen = useRef('');
   const label = useMemo(() => makeLabel(), []);
+  const color = BUBBLE_COLORS[index % BUBBLE_COLORS.length];
   useEffect(
     () => () => {
       label.texture.dispose();
@@ -70,7 +83,7 @@ function BubbleView({ engine, index }) {
       seen.current = key;
       drawLabel(label, b.text, b.progress);
     }
-    if (mat.current) mat.current.emissiveIntensity = b === engine.active ? 1.8 : b.dying ? 2.4 : 0.6;
+    if (mat.current) mat.current.emissiveIntensity = b === engine.active ? 0.55 : b.dying ? 0.9 : 0.12;
   });
   return (
     <group ref={group} visible={false}>
@@ -78,11 +91,11 @@ function BubbleView({ engine, index }) {
         <sphereGeometry args={[1, 32, 24]} />
         <meshPhysicalMaterial
           ref={mat}
-          color="#5aa8ff"
-          emissive="#1457d9"
+          color={color}
+          emissive={color}
           transparent
-          opacity={0.38}
-          roughness={0.08}
+          opacity={0.9}
+          roughness={0.25}
           clearcoat={1}
         />
       </mesh>
@@ -100,35 +113,30 @@ function Cannon({ engine }) {
   useFrame(() => {
     if (pivot.current) pivot.current.rotation.z = -engine.aim;
     if (barrel.current) barrel.current.position.y = -engine.recoil * 0.35;
-    if (mat.current) mat.current.color.set(engine.wrongT > 0 ? '#ff5c78' : '#3d8bff');
+    if (mat.current) mat.current.color.set(engine.wrongT > 0 ? '#C62F2F' : '#E9695C');
   });
   return (
     <group position={[0, WORLD.cannonY, 0]}>
       <mesh>
         <cylinderGeometry args={[0.9, 1.2, 0.6, 24]} />
-        <meshStandardMaterial color="#26335c" metalness={0.6} roughness={0.4} />
+        <meshStandardMaterial color="#12211F" roughness={0.6} />
       </mesh>
       <group ref={pivot}>
         <group ref={barrel}>
           <mesh position={[0, 0.9, 0]}>
             <cylinderGeometry args={[0.25, 0.38, 1.6, 16]} />
-            <meshStandardMaterial
-              ref={mat}
-              color="#3d8bff"
-              metalness={0.5}
-              roughness={0.35}
-              emissive="#0b2a66"
-            />
+            <meshStandardMaterial ref={mat} color="#E9695C" roughness={0.45} />
           </mesh>
-          <mesh position={[0, 1.75, 0]}>
-            <torusGeometry args={[0.28, 0.06, 8, 20]} rotation-x={Math.PI / 2} />
-            <meshBasicMaterial color="#8b6cff" />
+          <mesh position={[0, 1.75, 0]} rotation-x={Math.PI / 2}>
+            <torusGeometry args={[0.28, 0.06, 8, 20]} />
+            <meshBasicMaterial color="#F7C948" />
           </mesh>
         </group>
       </group>
     </group>
   );
 }
+
 function Projectiles({ engine }) {
   const refs = useRef([]);
   useFrame(() => {
@@ -151,16 +159,17 @@ function Projectiles({ engine }) {
           visible={false}
         >
           <sphereGeometry args={[0.2, 12, 12]} />
-          <meshBasicMaterial color="#8fd3ff" />
+          <meshBasicMaterial color="#FBF9EF" />
         </mesh>
       ))}
     </>
   );
 }
+
 function Particles({ engine }) {
   const refs = useRef([]);
   const mats = useMemo(
-    () => ['#4da3ff', '#ffffff', '#ff5c78'].map((c) => new MeshBasicMaterial({ color: c })),
+    () => ['#6FC3F7', '#FBF9EF', '#E9695C'].map((c) => new MeshBasicMaterial({ color: c })),
     [],
   );
   useEffect(() => () => mats.forEach((m) => m.dispose()), [mats]);
@@ -192,18 +201,18 @@ function Particles({ engine }) {
     </>
   );
 }
+
 export default function GameScene({ engine }) {
   return (
     <Canvas camera={{ position: [0, 0, 14], fov: 50 }} dpr={[1, 2]} aria-label="3D typing game arena">
-      <color attach="background" args={['#080d1d']} />
-      <fog attach="fog" args={['#080d1d', 18, 40]} />
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[4, 8, 8]} intensity={1.4} />
-      <pointLight position={[0, -4, 6]} intensity={30} color="#3a8cff" />
-      <gridHelper args={[60, 60, '#1e5cff', '#12306b']} position={[0, -6.2, -4]} />
+      <color attach="background" args={['#1F3B37']} />
+      <fog attach="fog" args={['#1F3B37', 18, 40]} />
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[4, 8, 8]} intensity={1.3} />
+      <gridHelper args={[60, 60, '#5C8F86', '#35605A']} position={[0, -6.2, -4]} />
       <mesh position={[0, WORLD.danger, -0.2]}>
-        <planeGeometry args={[40, 0.06]} />
-        <meshBasicMaterial color="#ff3355" />
+        <planeGeometry args={[40, 0.07]} />
+        <meshBasicMaterial color="#E9695C" />
       </mesh>
       <Loop engine={engine} />
       <Cannon engine={engine} />

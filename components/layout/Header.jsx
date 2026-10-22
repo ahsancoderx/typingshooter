@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
+
 export const NAV = [
   { label: 'Home', href: '/' },
   { label: 'Typing Test', href: '/typing-test' },
@@ -23,18 +24,20 @@ export const NAV = [
   { label: 'Progress', href: '/progress' },
   { label: 'Settings', href: '/settings' },
 ];
+
 function Logo() {
   return (
     <Link href="/" className="logo" aria-label="TypeBlaster home">
-      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
-        <circle cx="16" cy="16" r="12" fill="none" stroke="#3d8bff" strokeWidth="2.5" />
-        <circle cx="16" cy="16" r="4" fill="#8b6cff" />
-        <path d="M16 1v7M16 24v7M1 16h7M24 16h7" stroke="#3d8bff" strokeWidth="2.5" strokeLinecap="round" />
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill="#F7C948" stroke="#16201E" strokeWidth="2.5" />
+        <circle cx="16" cy="16" r="7" fill="none" stroke="#16201E" strokeWidth="2.5" />
+        <circle cx="16" cy="16" r="2.5" fill="#E9695C" stroke="#16201E" strokeWidth="1.5" />
       </svg>
       <span>TypeBlaster</span>
     </Link>
   );
 }
+
 export default function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -42,16 +45,11 @@ export default function Header() {
   return (
     <AppBar
       position="sticky"
-      color="transparent"
+      color="inherit"
       elevation={0}
-      sx={{
-        bgcolor: 'rgba(8,13,29,0.92)',
-        backdropFilter: 'blur(8px)',
-        borderBottom: 1,
-        borderColor: 'divider',
-      }}
+      sx={{ bgcolor: '#3F6B64', color: '#FBF9EF', borderBottom: '3px solid #16201E' }}
     >
-      <Toolbar sx={{ maxWidth: 1200, width: '100%', mx: 'auto', gap: 1 }}>
+      <Toolbar sx={{ maxWidth: 1200, width: '100%', mx: 'auto', gap: 1, minHeight: { xs: 60, md: 68 } }}>
         <Logo />
         <Box
           component="nav"
@@ -65,12 +63,13 @@ export default function Header() {
               href={item.href}
               aria-current={isActive(item.href) ? 'page' : undefined}
               sx={{
-                color: isActive(item.href) ? 'primary.main' : 'text.secondary',
+                color: '#FBF9EF',
                 borderRadius: 0,
-                minHeight: 64,
-                borderBottom: 2,
-                borderColor: isActive(item.href) ? 'primary.main' : 'transparent',
-                '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
+                minHeight: 68,
+                px: 1.75,
+                borderBottom: '4px solid',
+                borderColor: isActive(item.href) ? '#F7C948' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(0,0,0,.12)' },
               }}
             >
               {item.label}
@@ -86,16 +85,21 @@ export default function Header() {
         >
           Start Practicing
         </Button>
-        <IconButton aria-label="Open menu" onClick={() => setOpen(true)} sx={{ display: { md: 'none' } }}>
+        <IconButton
+          aria-label="Open menu"
+          onClick={() => setOpen(true)}
+          sx={{ display: { md: 'none' }, color: '#FBF9EF' }}
+        >
           <MenuIcon />
         </IconButton>
       </Toolbar>
-
       <Drawer
         anchor="right"
         open={open}
         onClose={() => setOpen(false)}
-        sx={{ '& .MuiDrawer-paper': { width: 280, p: 2, bgcolor: 'background.paper' } }}
+        sx={{
+          '& .MuiDrawer-paper': { width: 280, p: 2, bgcolor: '#FBF9EF', borderLeft: '3px solid #16201E' },
+        }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <IconButton aria-label="Close menu" onClick={() => setOpen(false)}>

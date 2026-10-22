@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, LinearProgress, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import DifficultySelector from '@/components/ui/DifficultySelector';
 import DurationSelector from '@/components/ui/DurationSelector';
@@ -107,6 +107,11 @@ export default function TypingTest() {
   const [durO, setDur] = useState(null);
   const [cat, setCat] = useState('words');
   const [seed, setSeed] = useState(1);
+  // Pick a fresh passage on every visit (after hydration, so server and browser markup match).
+  useEffect(() => {
+    const id = setTimeout(() => setSeed(Math.floor(Math.random() * 100000)), 0);
+    return () => clearTimeout(id);
+  }, []);
   const diff = diffO ?? settings.difficulty;
   const dur = durO ?? settings.duration;
   return (
@@ -121,7 +126,7 @@ export default function TypingTest() {
       onCat={setCat}
       onDiff={setDiff}
       onDur={setDur}
-      onRestart={() => setSeed(Date.now())}
+      onRestart={() => setSeed((n) => n + 1)}
     />
   );
 }

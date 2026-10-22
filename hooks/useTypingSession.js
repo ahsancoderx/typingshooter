@@ -54,7 +54,14 @@ export function useTypingSession(text, durationSec, onFinish, onWrong) {
       const sec = Math.floor(secs);
       let current = smp;
       if (sec > smp.length) {
-        current = [...smp, { t: sec, wpm: calcMetrics(countCorrect(t, text), kk.total, kk.right, sec).wpm }];
+        current = [
+          ...smp,
+          {
+            t: sec,
+            wpm: calcMetrics(countCorrect(t, text), kk.total, kk.right, sec).wpm,
+            errors: kk.total - kk.right,
+          },
+        ];
         latest.current.samples = current;
         setSamples(current);
       }

@@ -2,9 +2,14 @@
 import { Button } from '@mui/material';
 import LinkButton from '@/components/ui/LinkButton';
 import StatCard from '@/components/ui/StatCard';
-import LineChart from '@/components/ui/LineChart';
+import ComboChart from '@/components/ui/ComboChart';
 
 export default function TypingResults({ result, onRetry }) {
+  const points = result.samples.map((s, i, a) => ({
+    x: s.t,
+    line: s.wpm,
+    bar: s.errors - (i ? a[i - 1].errors : 0),
+  }));
   return (
     <section className="results-fill" aria-labelledby="results-h">
       <div className="results-head">
@@ -30,16 +35,17 @@ export default function TypingResults({ result, onRetry }) {
         <StatCard label="Duration" value={`${result.duration}s`} />
       </div>
       <div className="chart-fill">
-        {result.samples.length >= 2 ? (
-          <LineChart
-            points={result.samples.map((s) => ({ x: s.t, y: s.wpm }))}
+        {points.length >= 2 ? (
+          <ComboChart
+            points={points}
             xLabel="Time (seconds)"
-            yLabel="WPM"
-            ariaLabel="WPM over time during the test"
+            lineLabel="WPM"
+            barLabel="Mistakes"
+            ariaLabel="WPM and mistakes per second during the test"
           />
         ) : (
-          <p className="muted note">
-            Not enough time passed to draw a WPM-over-time graph. Try a longer test.
+          <p className="muted note" style={{ padding: 16 }}>
+            Not enough time passed to draw a graph. Try a longer test.
           </p>
         )}
       </div>

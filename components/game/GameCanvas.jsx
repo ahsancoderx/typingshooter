@@ -1,14 +1,15 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button } from '@mui/material';
 import GameScene from '@/components/game/GameScene';
 import DifficultySelector from '@/components/ui/DifficultySelector';
 import StatCard from '@/components/ui/StatCard';
-import LineChart from '@/components/ui/LineChart';
+import ComboChart from '@/components/ui/ComboChart';
+import LinkButton from '@/components/ui/LinkButton';
 import { GameEngine } from '@/lib/gameEngine';
 import { GAME_CONFIG } from '@/lib/gameConfig';
-import { addResult, newId, useAppData } from '@/lib/storage';
+import { addResult, newId, soundEnabled, updateSettings, useAppData } from '@/lib/storage';
 import { playSound } from '@/lib/sound';
 import { hasWebGL } from '@/lib/webgl';
 
@@ -27,6 +28,13 @@ const snap = (e) => ({
   target: e.active ? { text: e.active.text, progress: e.active.progress } : null,
 });
 
+const rating = (wpm, acc) => {
+  if (wpm >= 60 && acc >= 95) return 'Typing Master';
+  if (wpm >= 40 && acc >= 90) return 'Fast Typist';
+  if (wpm >= 25 && acc >= 80) return 'Solid Typist';
+  return 'Keep practicing';
+};
+
 export default function GameCanvas() {
   const { settings } = useAppData();
   const [diffO, setDiff] = useState(null);
@@ -34,6 +42,24 @@ export default function GameCanvas() {
   const [engine, setEngine] = useState(null);
   const [hud, setHud] = useState(null);
   const diff = diffO ?? settings.difficulty;
+
+  // fullscreen
+  const boxRef = useRef(null);
+  const [full, setFull] = useState(false);
+
+  useEffect(() => {
+    const on = () => setFull(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', on);
+    return () => document.removeEventListener('fullscreenchange', on);
+  }, []);
+
+  const toggleFull = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.();
+    } else {
+      boxRef.current?.requestFullscreen?.();
+    }
+  };
 
   const finish = (e) => {
     addResult({
@@ -55,12 +81,11 @@ export default function GameCanvas() {
 
   const start = () => {
     const reduced = settings.reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const sound = settings.sound;
     const eng = new GameEngine(
       diff,
       reduced,
       (ev) => {
-        if (sound) playSound(ev);
+        if (soundEnabled()) playSound(ev);
       },
       () => finish(eng),
     );
@@ -111,10 +136,32 @@ export default function GameCanvas() {
     );
   }
 
-  if (phase === 'idle') {
-    return (
-      <div className="game-box idle">
+  const idle = phase === 'idle' || !hud;
+
+  const stats = idle
+    ? []
+    : [
+        ['Score', hud.score],
+        ['Lives', hud.lives],
+        ['Accuracy', `${hud.acc}%`],
+        ['WPM', hud.wpm],
+        ['Combo', `x${hud.combo}`],
+        ['Missed', hud.missed],
+      ];
+  const points = idle
+    ? []
+    : hud.samples.map((s, i, a) => ({
+        x: s.t,
+        line: s.wpm,
+        bar: s.errors - (i ? a[i - 1].errors : 0),
+      }));
+
+  // One single wrapper div for every phase, so fullscreen stays active when the game starts/restarts/ends.
+  return (
+    <div className={idle ? 'game-box idle' : 'game-box'} ref={boxRef}>
+      {idle ? (
         <section className="panel game-menu">
+          <span className="tag">TypeBlaster</span>
           <h2>Choose a difficulty</h2>
           <div className="controls">
             <DifficultySelector value={diff} onChange={setDiff} />
@@ -123,109 +170,113 @@ export default function GameCanvas() {
           <p className="muted note">
             A physical keyboard is recommended. Type the letters or words on the bubbles. Esc pauses.
           </p>
-          <Button variant="contained" size="large" onClick={start}>
-            Start game
-          </Button>
+          <div className="btn-row">
+            <Button variant="contained" size="large" onClick={start}>
+              Start game
+            </Button>
+            <Button variant="outlined" size="large" onClick={toggleFull}>
+              {full ? 'Exit fullscreen' : 'Fullscreen'}
+            </Button>
+          </div>
         </section>
-      </div>
-    );
-  }
-
-  return (
-    <div className="game-box">
-      {engine ? <GameScene engine={engine} /> : null}
-      <div className="game-hud">
-        <div className="hud-stats">
-          <span className="hud-pill">
-            <b>{hud.score}</b> Score
-          </span>
-          <span className="hud-pill">
-            <b>{hud.lives}</b> Lives
-          </span>
-          <span className="hud-pill">
-            <b>{hud.acc}%</b> Accuracy
-          </span>
-          <span className="hud-pill">
-            <b>{hud.wpm}</b> WPM
-          </span>
-          <span className="hud-pill">
-            <b>x{hud.combo}</b> Combo
-          </span>
-          <span className="hud-pill">
-            <b>{hud.missed}</b> Missed
-          </span>
-        </div>
-        <div className="hud-actions">
-          {phase === 'playing' ? (
-            <Button size="small" variant="outlined" onClick={pause}>
-              Pause
-            </Button>
-          ) : null}
-          <Button size="small" variant="outlined" onClick={start}>
-            Restart
-          </Button>
-        </div>
-      </div>
-      <div className="game-target">
-        {hud.target ? (
-          <>
-            <span className="hit">{hud.target.text.slice(0, hud.target.progress)}</span>
-            {hud.target.text.slice(hud.target.progress)}
-          </>
-        ) : (
-          'Type a letter to lock on'
-        )}
-      </div>
-
-      {phase === 'paused' ? (
-        <div className="overlay-panel">
-          <div>
-            <h2>Paused</h2>
-            <Button variant="contained" onClick={resume}>
-              Resume
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {phase === 'over' ? (
-        <div className="overlay-panel">
-          <div className="panel result-panel">
-            <h2>Game over</h2>
-            <div className="stat-row compact">
-              <StatCard label="Final score" value={hud.score} />
-              <StatCard label="Accuracy" value={`${hud.acc}%`} />
-              <StatCard label="WPM" value={hud.wpm} />
-              <StatCard label="Bubbles popped" value={hud.popped} />
-              <StatCard label="Missed" value={hud.missed} />
-              <StatCard label="Survived" value={`${hud.time}s`} />
+      ) : (
+        <>
+          {engine ? <GameScene engine={engine} /> : null}
+          <div className="game-hud">
+            <div className="hud-stats">
+              {stats.map(([l, v]) => (
+                <div className="hud-stat" key={l}>
+                  <b>{v}</b>
+                  <span>{l}</span>
+                </div>
+              ))}
             </div>
-            {hud.samples.length >= 2 ? (
-              <div className="chart-fill mini">
-                <LineChart
-                  points={hud.samples.map((s) => ({ x: s.t, y: s.wpm }))}
-                  xLabel="Time (seconds)"
-                  yLabel="WPM"
-                  ariaLabel="WPM during this game"
-                />
-              </div>
+            <div className="hud-actions">
+              {phase === 'playing' ? (
+                <Button size="small" variant="outlined" onClick={pause}>
+                  Pause
+                </Button>
+              ) : null}
+              <Button size="small" variant="outlined" onClick={start}>
+                Restart
+              </Button>
+              <Button size="small" variant="outlined" onClick={() => updateSettings({ sound: !settings.sound })}>
+                Sound: {settings.sound ? 'On' : 'Off'}
+              </Button>
+              <Button size="small" variant="outlined" onClick={toggleFull}>
+                {full ? 'Exit full' : 'Fullscreen'}
+              </Button>
+            </div>
+          </div>
+          <div className="game-target">
+            {hud.target ? (
+              <>
+                <span className="hit">{hud.target.text.slice(0, hud.target.progress)}</span>
+                {hud.target.text.slice(hud.target.progress)}
+              </>
             ) : (
-              <p className="muted note">You survived less than 2 seconds, so there is no graph yet.</p>
+              'Type a letter to lock on'
             )}
-            <p className="muted note">
-              Saved in this browser. <Link href="/progress">See all progress</Link>
-            </p>
-            <div className="btn-row" style={{ justifyContent: 'center' }}>
-              <Button variant="contained" onClick={start}>
-                Play again
-              </Button>
-              <Button variant="outlined" onClick={() => setPhase('idle')}>
-                Change difficulty
-              </Button>
-            </div>
           </div>
-        </div>
-      ) : null}
+
+          {phase === 'paused' ? (
+            <div className="overlay-panel">
+              <div className="panel">
+                <h2>Paused</h2>
+                <Button variant="contained" onClick={resume}>
+                  Resume
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {phase === 'over' ? (
+            <div className="overlay-panel">
+              <div className="panel result-panel">
+                <span className="tag">Game over</span>
+                <h2>{rating(hud.wpm, hud.acc)}</h2>
+                <div className="stat-row compact">
+                  <StatCard label="Final score" value={hud.score} />
+                  <StatCard label="Accuracy" value={`${hud.acc}%`} />
+                  <StatCard label="WPM" value={hud.wpm} />
+                  <StatCard label="Bubbles popped" value={hud.popped} />
+                  <StatCard label="Missed bubbles" value={hud.missed} />
+                  <StatCard label="Correct characters" value={hud.correct} />
+                  <StatCard label="Incorrect keystrokes" value={hud.wrong} />
+                  <StatCard label="Survived" value={`${hud.time}s`} />
+                </div>
+                {points.length >= 2 ? (
+                  <div className="chart-fill mini">
+                    <ComboChart
+                      points={points}
+                      xLabel="Time (seconds)"
+                      lineLabel="WPM"
+                      barLabel="Mistakes"
+                      ariaLabel="WPM and mistakes per second in this game"
+                    />
+                  </div>
+                ) : (
+                  <p className="muted note">You survived less than 2 seconds, so there is no graph yet.</p>
+                )}
+                <div className="btn-row" style={{ justifyContent: 'center' }}>
+                  <Button variant="contained" onClick={start}>
+                    Play again
+                  </Button>
+                  <Button variant="outlined" onClick={() => setPhase('idle')}>
+                    Change difficulty
+                  </Button>
+                  <Button variant="outlined" onClick={toggleFull}>
+                    {full ? 'Exit fullscreen' : 'Fullscreen'}
+                  </Button>
+                  <LinkButton href="/progress" variant="outlined">
+                    All progress
+                  </LinkButton>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
