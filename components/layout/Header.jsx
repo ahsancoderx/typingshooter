@@ -27,14 +27,17 @@ export const NAV = [
 
 function Logo() {
   return (
-    <Link href="/" className="logo" aria-label="TypeBlaster home">
-      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
-        <rect x="2" y="2" width="28" height="28" rx="6" fill="#F7C948" stroke="#16201E" strokeWidth="2.5" />
-        <circle cx="16" cy="16" r="7" fill="none" stroke="#16201E" strokeWidth="2.5" />
-        <circle cx="16" cy="16" r="2.5" fill="#E9695C" stroke="#16201E" strokeWidth="1.5" />
-      </svg>
-      <span>TypeBlaster</span>
-    </Link>
+    
+<Link href="/" className="logo" aria-label="TypeBlaster home">
+  <img
+    src="/favicon.ico"
+    alt=""
+    width="30"
+    height="30"
+  />
+  <span>TypeBlaster</span>
+</Link>
+
   );
 }
 
